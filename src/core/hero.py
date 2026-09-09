@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+# Handles scaling stats based on level
 @dataclass
 class StatGrowth:
     base: float
@@ -8,6 +9,7 @@ class StatGrowth:
     def value_at_level(self, level: int) -> float:
         return self.base + self.growth_per_level * (level - 1)
 
+# Template holding base values for hero stats
 @dataclass
 class BaseStats:
     hp: float
@@ -24,8 +26,18 @@ class BaseStats:
     move_spd: float
     ba_range: float
     crit_chance: float = 0.0
+    phy_pen: float = 0.0
+    mag_pen: float = 0.0
+    lifesteal: float = 0.0
+    spell_vamp: float = 0.0
+    cdr: float = 0.0
+    hybrid_lifesteal: float = 0.0
+    hybrid_def: float = 0.0
+    hybrid_regen: float = 0.0
+    adaptive_atk: float = 0.0
+    adaptive_pen: float = 0.0
 
-
+# Tracks HP and mana state while dynamically computing overall stats
 class Hero:
     def  __init__(
         self,
@@ -78,3 +90,67 @@ class Hero:
     def mag_pow(self) -> float:
         bonus = sum(getattr(item, "mag_pow_bonus", 0.0) for item in self.build)
         return self._base_stats.mag_pow + bonus
+
+    @property
+    def phy_def(self) -> float:
+        bonus = sum(getattr(item, "phy_def_bonus", 0.0) for item in self.build)
+        return self._base_stats.phy_def + bonus
+
+    @property
+    def mag_def(self) -> float:
+        bonus = sum(getattr(item, "mag_def_bonus", 0.0) for item in self.build)
+        return self._base_stats.mag_def + bonus
+
+    @property
+    def atk_spd(self) -> float:
+        bonus = sum(getattr(item, "atk_spd_bonus", 0.0) for item in self.build)
+        return self._base_stats.atk_spd + bonus
+
+    @property
+    def atk_spd_ratio(self) -> float:
+        return self._base_stats.atk_spd_ratio
+
+    @property
+    def crit_dmg(self) -> float:
+        bonus = sum(getattr(item, "crit_dmg_bonus", 0.0) for item in self.build)
+        return self._base_stats.crit_dmg + bonus
+
+    @property
+    def move_spd(self) -> float:
+        bonus = sum(getattr(item, "move_spd_bonus", 0.0) for item in self.build)
+        return self._base_stats.move_spd + bonus
+
+    @property
+    def ba_range(self) -> float:
+        bonus = sum(getattr(item, "ba_range_bonus", 0.0) for item in self.build)
+        return self._base_stats.ba_range + bonus
+
+    @property
+    def crit_chance(self) -> float:
+        bonus = sum(getattr(item, "crit_chance_bonus", 0.0) for item in self.build)
+        return self._base_stats.crit_chance + bonus
+
+    @property
+    def phy_pen(self) -> float:
+        bonus = sum(getattr(item, "phy_pen_bonus", 0.0) for item in self.build)
+        return self._base_stats.phy_pen + bonus
+
+    @property
+    def mag_pen(self) -> float:
+        bonus = sum(getattr(item, "mag_pen_bonus", 0.0) for item in self.build)
+        return self._base_stats.mag_pen + bonus
+
+    @property
+    def lifesteal(self) -> float:
+        bonus = sum(getattr(item, "lifesteal_bonus", 0.0) for item in self.build)
+        return self._base_stats.lifesteal + bonus
+
+    @property
+    def spell_vamp(self) -> float:
+        bonus = sum(getattr(item, "spell_vamp_bonus", 0.0) for item in self.build)
+        return self._base_stats.spell_vamp + bonus
+
+    @property
+    def cdr(self) -> float:
+        bonus = sum(getattr(item, "cdr_bonus", 0.0) for item in self.build)
+        return min(0.40, self._base_stats.cdr + bonus)
