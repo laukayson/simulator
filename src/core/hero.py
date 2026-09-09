@@ -37,6 +37,57 @@ class BaseStats:
     adaptive_atk: float = 0.0
     adaptive_pen: float = 0.0
 
+# Master lookup table for Level 60 emblem attributes
+base_emblems = {
+    "Basic Common": {
+        "hybrid_regen_bonus": 12.0,
+        "hp_bonus": 275.0,
+        "adaptive_atk_bonus": 22.0,
+    },
+    "Tank": {
+        "hp_bonus": 500.0,
+        "hybrid_def_bonus": 10.0,
+        "hp_regen_bonus": 4.0,
+    },
+    "Assassin": {
+        "adaptive_pen_bonus": 14.0,
+        "adaptive_atk_bonus": 10.0,
+        "move_spd_bonus": 0.03,
+    },
+    "Mage": {
+        "mag_pow_bonus": 30.0,
+        "cdr_bonus": 0.05,
+        "mag_pen_bonus": 0.08,
+    },
+    "Fighter": {
+        "hybrid_lifesteal_bonus": 0.10,
+        "adaptive_atk_bonus": 16.0,
+        "hybrid_def_bonus": 8.0,
+    },
+    "Support": {
+        "healing_effect_bonus": 0.12,
+        "cdr_bonus": 0.10,
+        "move_spd_bonus": 0.06,
+    },
+    "Marksman": {
+        "atk_spd_bonus": 0.15,
+        "adaptive_atk_bonus": 16.0,
+        "adaptive_pen_bonus": 0.10,
+    }
+}
+
+# Master lookup table for Tier 1 talents
+t1_talents = {
+    "Thrill": {"adaptive_atk_bonus": 16.0},
+    "Swift": {"atk_spd_bonus": 0.10},
+    "Vitality": {"hp_bonus": 225.0},
+    "Rupture": {"adaptive_pen_bonus": 5.0},
+    "Inspire": {"cdr_bonus": 0.05, "mana_regen_bonus": 2.0},
+    "Firmness": {"phy_def_bonus": 8.0, "mag_def_bonus": 8.0},
+    "Agility": {"move_spd_bonus": 0.04},
+    "Fatal": {"crit_chance_bonus": 0.05, "crit_dmg_bonus": 0.05},
+}
+
 # Tracks HP and mana state while dynamically computing overall stats
 class Hero:
     def  __init__(
