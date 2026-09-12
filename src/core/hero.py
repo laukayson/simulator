@@ -29,11 +29,6 @@ class BaseStats:
     lifesteal: float = 0.0
     spell_vamp: float = 0.0
     cdr: float = 0.0
-    hybrid_lifesteal: float = 0.0
-    hybrid_def: float = 0.0
-    hybrid_regen: float = 0.0
-    adaptive_atk: float = 0.0
-    adaptive_pen: float = 0.0
 
 # Master lookup table for Level 60 emblem attributes
 base_emblems = {
@@ -190,13 +185,13 @@ class Hero:
 
     @property
     def phy_def(self) -> float:
-        flat = self._sum_stat("phy_def_flat_bonus")
+        flat = self._sum_stat("phy_def_flat_bonus") + self._sum_stat("hybrid_def_flat_bonus")
         pct = self._sum_stat("phy_def_pct_bonus")
         return (self._base_stats.phy_def + flat) * (1 + pct)
 
     @property
     def mag_def(self) -> float:
-        flat = self._sum_stat("mag_def_flat_bonus")
+        flat = self._sum_stat("mag_def_flat_bonus") + self._sum_stat("hybrid_def_flat_bonus")
         pct = self._sum_stat("mag_def_pct_bonus")
         return (self._base_stats.mag_def + flat) * (1 + pct)
 
@@ -250,11 +245,11 @@ class Hero:
 
     @property
     def lifesteal(self) -> float:
-        return self._base_stats.lifesteal + self._sum_stat("lifesteal_pct_bonus")
+        return self._base_stats.lifesteal + self._sum_stat("lifesteal_pct_bonus") + self._sum_stat("hybrid_lifesteal_pct_bonus")
     
     @property
     def spell_vamp(self) -> float:
-        return self._base_stats.spell_vamp + self._sum_stat("spell_vamp_pct_bonus")
+        return self._base_stats.spell_vamp + self._sum_stat("spell_vamp_pct_bonus") + self._sum_stat("hybrid_lifesteal_pct_bonus")
 
     @property
     def cdr(self) -> float:
