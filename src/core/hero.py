@@ -26,8 +26,6 @@ class BaseStats:
     move_spd: float
     ba_range: float
     crit_chance: float = 0.0
-    phy_pen: float = 0.0
-    mag_pen: float = 0.0
     lifesteal: float = 0.0
     spell_vamp: float = 0.0
     cdr: float = 0.0
@@ -95,10 +93,14 @@ class Hero:
         name: str,
         base_stats: BaseStats,
         level: int = 1,
+        emblem: any = None,
+        primary_dmg: str = "phy",
     ):
         self.name = name
         self.level = level
         self._base_stats = base_stats
+        self.emblem = emblem
+        self.primary_dmg = primary_dmg
 
         self._curr_hp: float = base_stats.hp
         self._curr_mana: float = base_stats.mana
@@ -106,10 +108,21 @@ class Hero:
         self.build: list = []
         self.skills: list = []
 
+    def _get_stat_sources(self) -> list:
+        sources = []
+        if self.emblem:
+            sources.append(self.emblem)
+        sources.extend(self.build)
+        return sources
+
+    def _sum_stat(self, attr_name: str) -> float:
+        return sum(getattr(source, attr_name, 0.0) for source in self._get_stat_sources())
+
     @property
     def max_hp(self) -> float:
-        hp_bonus = sum(getattr(item, "hp_bonus", 0.0) for item in self.build)
-        return self._base_stats.hp + hp_bonus
+        flat = self._sum_stat("hp_flat_bonus")
+        pct = self._sum_stat("hp_pct_bonus")
+        return (self._base_stats.hp + flat) * (1 + pct)
 
     @property
     def hp(self) -> float:
@@ -121,8 +134,9 @@ class Hero:
 
     @property
     def max_mana(self) -> float:
-        mana_bonus = sum(getattr(item, "mana_bonus", 0.0) for item in self.build)
-        return self._base_stats.mana + mana_bonus
+        flat = self._sum_stat("mana_flat_bonus")
+        pct = self._sum_stat("mana_pct_bonus")
+        return (self._base_stats.mana + flat) * (1 + pct)
 
     @property
     def mana(self) -> float:
@@ -133,29 +147,64 @@ class Hero:
         self._curr_mana = max(0.0, min(value, self.max_mana))
 
     @property
+    def _get_extra_phy_atk(self) -> float:
+        flat = self._sum_stat("phy_atk_flat_bonus")
+        pct = self._sum_stat("phy_atk_pct_bonus")
+        return (self._base_stats.phy_atk + flat) * (1 + pct) - self._base_stats.phy_atk
+
+    @property
+    def _get_extra_mag_pow(self) -> float:
+        flat = self._sum_stat("mag_pow_flat_bonus")
+        pct = self._sum_stat("mag_pow_pct_bonus")
+        return (self._base_stats.mag_pow + flat) * (1 + pct) - self._base_stats.mag_pow
+
+    @property
+    def adaptive_type(self) -> str:
+        if self._get_extra_phy_atk > self._get_extra_mag_pow:
+            return "phy"
+        if self._get_extra_mag_pow > self._get_extra_phy_atk:
+            return "mag"
+        return self.primary_dmg
+
+    @property
+    def adaptive_atk(self) -> float:
+        return self._sum_stat("adaptive_atk_flat_bonus")
+
+    @property
     def phy_atk(self) -> float:
-        bonus = sum(getattr(item, "phy_atk_bonus", 0.0) for item in self.build)
-        return self._base_stats.phy_atk + bonus
+        flat = self._sum_stat("phy_atk_flat_bonus")
+        pct = self._sum_stat("phy_atk_pct_bonus")
+        if self.adaptive_type == "phy":
+            pct += self._sum_stat("adaptive_atk_pct_bonus")
+            flat += self.adaptive_atk
+        return (self._base_stats.phy_atk + flat) * (1 + pct)
 
     @property
     def mag_pow(self) -> float:
-        bonus = sum(getattr(item, "mag_pow_bonus", 0.0) for item in self.build)
-        return self._base_stats.mag_pow + bonus
+        flat = self._sum_stat("mag_pow_flat_bonus")
+        pct = self._sum_stat("mag_pow_pct_bonus")
+        if self.adaptive_type == "mag":
+            pct += self._sum_stat("adaptive_atk_pct_bonus")
+            flat += self.adaptive_atk
+        return (self._base_stats.mag_pow + flat) * (1 + pct)
 
     @property
     def phy_def(self) -> float:
-        bonus = sum(getattr(item, "phy_def_bonus", 0.0) for item in self.build)
-        return self._base_stats.phy_def + bonus
+        flat = self._sum_stat("phy_def_flat_bonus")
+        pct = self._sum_stat("phy_def_pct_bonus")
+        return (self._base_stats.phy_def + flat) * (1 + pct)
 
     @property
     def mag_def(self) -> float:
-        bonus = sum(getattr(item, "mag_def_bonus", 0.0) for item in self.build)
-        return self._base_stats.mag_def + bonus
+        flat = self._sum_stat("mag_def_flat_bonus")
+        pct = self._sum_stat("mag_def_pct_bonus")
+        return (self._base_stats.mag_def + flat) * (1 + pct)
 
     @property
     def atk_spd(self) -> float:
-        bonus = sum(getattr(item, "atk_spd_bonus", 0.0) for item in self.build)
-        return self._base_stats.atk_spd + bonus
+        flat = self._sum_stat("atk_spd_flat_bonus")
+        pct = self._sum_stat("atk_spd_pct_bonus")
+        return (self._base_stats.atk_spd + flat) * (1 + pct)
 
     @property
     def atk_spd_ratio(self) -> float:
@@ -163,45 +212,50 @@ class Hero:
 
     @property
     def crit_dmg(self) -> float:
-        bonus = sum(getattr(item, "crit_dmg_bonus", 0.0) for item in self.build)
-        return self._base_stats.crit_dmg + bonus
+        flat = self._sum_stat("crit_dmg_flat_bonus")
+        pct = self._sum_stat("crit_dmg_pct_bonus")
+        return (self._base_stats.crit_dmg + flat) * (1 + pct)
 
     @property
     def move_spd(self) -> float:
-        bonus = sum(getattr(item, "move_spd_bonus", 0.0) for item in self.build)
-        return self._base_stats.move_spd + bonus
+        flat = self._sum_stat("move_spd_flat_bonus")
+        pct = self._sum_stat("move_spd_pct_bonus")
+        return (self._base_stats.move_spd + flat) * (1 + pct)
 
     @property
     def ba_range(self) -> float:
-        bonus = sum(getattr(item, "ba_range_bonus", 0.0) for item in self.build)
-        return self._base_stats.ba_range + bonus
+        flat = self._sum_stat("ba_range_flat_bonus")
+        pct = self._sum_stat("ba_range_pct_bonus")
+        return (self._base_stats.ba_range + flat) * (1 + pct)
 
     @property
     def crit_chance(self) -> float:
-        bonus = sum(getattr(item, "crit_chance_bonus", 0.0) for item in self.build)
-        return self._base_stats.crit_chance + bonus
+        return self._base_stats.crit_chance + self._sum_stat("crit_chance_pct_bonus")
+    
+    @property
+    def adaptive_pen(self) -> float:
+        return self._sum_stat("adaptive_pen_flat_bonus")
 
     @property
     def phy_pen(self) -> float:
-        bonus = sum(getattr(item, "phy_pen_bonus", 0.0) for item in self.build)
-        return self._base_stats.phy_pen + bonus
+        if self.adaptive_type == "phy":
+            return self._sum_stat("phy_pen_flat_bonus") + self._sum_stat("adaptive_pen_flat_bonus")
+        return self._sum_stat("phy_pen_flat_bonus")
 
     @property
     def mag_pen(self) -> float:
-        bonus = sum(getattr(item, "mag_pen_bonus", 0.0) for item in self.build)
-        return self._base_stats.mag_pen + bonus
+        if self.adaptive_type == "mag":
+            return self._sum_stat("mag_pen_flat_bonus") + self._sum_stat("adaptive_pen_flat_bonus")
+        return self._sum_stat("mag_pen_flat_bonus")
 
     @property
     def lifesteal(self) -> float:
-        bonus = sum(getattr(item, "lifesteal_bonus", 0.0) for item in self.build)
-        return self._base_stats.lifesteal + bonus
-
+        return self._base_stats.lifesteal + self._sum_stat("lifesteal_pct_bonus")
+    
     @property
     def spell_vamp(self) -> float:
-        bonus = sum(getattr(item, "spell_vamp_bonus", 0.0) for item in self.build)
-        return self._base_stats.spell_vamp + bonus
+        return self._base_stats.spell_vamp + self._sum_stat("spell_vamp_pct_bonus")
 
     @property
     def cdr(self) -> float:
-        bonus = sum(getattr(item, "cdr_bonus", 0.0) for item in self.build)
-        return min(0.40, self._base_stats.cdr + bonus)
+        return min(0.40, self._base_stats.cdr + self._sum_stat("cdr_pct_bonus"))
